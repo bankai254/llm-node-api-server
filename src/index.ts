@@ -1,6 +1,8 @@
 import express, { Request, response, Response } from 'express';
 import mongoose from 'mongoose';
 import * as dotenv from 'dotenv';
+import axios from 'axios';
+import cors from 'cors';
 
 dotenv.config();
 
@@ -8,6 +10,7 @@ const app = express();
 const port = process.env.PORT || 3000;
 const mongoURI =
   process.env.MONGO_URI || 'mongodb://localhost:27017/conversations_db';
+const llmAPI = process.env.EXTERNAL_API_URL || 'http://localhost:8000';
 
 // Connect to MongoDB
 mongoose
@@ -34,6 +37,7 @@ const Conversation = mongoose.model('Conversation', conversationSchema);
 
 // Middleware to parse JSON bodies
 app.use(express.json());
+app.use(cors());
 
 // Route to get all conversations
 app.get('/api/conversations', async (req: Request, res: Response) => {
@@ -66,15 +70,32 @@ app.post('/api/conversations', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Model must be a number' });
     }
 
-    const newConversation = new Conversation({
-      model,
-      messages: initialMessage
-        ? [{ ...initialMessage, timestamp: new Date() }]
-        : [],
-    });
+    try {
+      // Call the LLM API
+      const llmAPICall = await axios.post(llmAPI, {
+        query: initialMessage,
+        model: model,
+      });
+      const apiResponse = llmAPICall.data.response;
 
-    await newConversation.save();
-    res.status(201).json(newConversation);
+      const newConversation = new Conversation({
+        model,
+        messages: initialMessage
+          ? [
+              {
+                ...initialMessage,
+                response: apiResponse,
+                timestamp: new Date(),
+              },
+            ]
+          : [],
+      });
+
+      await newConversation.save();
+      res.status(201).json(newConversation);
+    } catch (e) {
+      res.status(500).json({ error: (e as Error).message });
+    }
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
@@ -91,14 +112,27 @@ app.post(
 
       const { message } = req.body;
 
-      const newMessage = {
-        message,
-        timestamp: new Date(),
-      };
+      try {
+        // Call the LLM API
+        const llmAPICall = await axios.post(llmAPI, {
+          query: message,
+          model: conversation.model,
+        });
 
-      conversation.messages.push(newMessage);
-      await conversation.save();
-      res.status(201).json(conversation);
+        const apiResponse = llmAPICall.data.response;
+
+        const newMessage = {
+          message,
+          response: apiResponse,
+          timestamp: new Date(),
+        };
+
+        conversation.messages.push(newMessage);
+        await conversation.save();
+        res.status(201).json(conversation);
+      } catch (e) {
+        res.status(500).json({ error: (e as Error).message });
+      }
     } catch (err) {
       res.status(500).json({ error: (err as Error).message });
     }
