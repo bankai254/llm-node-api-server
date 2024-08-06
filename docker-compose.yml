@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   db:
     image: mongo:latest
@@ -22,6 +20,14 @@ services:
       - MONGO_URI=mongodb://db:27017/conversations_db
     volumes:
       - .:/app
+
+  llm:
+    build: https://github.com/bankai254/llm-python-program.git
+    container_name: llm_app
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/llm-app
 
 volumes:
   mongodb_data:
