@@ -22,8 +22,10 @@ services:
       - .:/app
 
   llm:
-    build: https://github.com/bankai254/llm-python-program.git
+    build: https://github.com/bankai254/llm-python-program.git 
     container_name: llm_app
+    environment:
+      - HF_TOKEN=
     ports:
       - "8000:8000"
     volumes:

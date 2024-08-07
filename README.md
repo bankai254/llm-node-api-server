@@ -35,6 +35,17 @@ This project is a RESTful API built using Node.js, Express, MongoDB, and TypeScr
 
         npm run build
 
+5.  **Setting up the LLM Server :**
+    
+    - **Option 1** - Using Remote repository with Docker
+      - Update the `llm` service environment `HF_TOKEN`
+      - Run `docker compose up --build` (first time) or `docker compose up` (subsequent times)
+    - **Option 2** - Using local repository with Docker
+      - Clone https://github.com/bankai254/llm-python-program.git
+      - Update `llm` service `build` value to the location of the local repository
+      - Add `HF_TOKEN` to `.env` file in local repository
+      - Run `docker compose up --build` (first time) or `docker compose up` (subsequent times)
+
 5.  **Start the server :**
     You can skip this if you intend to use Docker.
 
